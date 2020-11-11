@@ -1,12 +1,13 @@
-(include kowari)
+(import kowari)
 
-# Yeah sorry fellas it's just a smoke test I don't want to have to compare
-# individual pixels or whatever.
+# I am too lazy to make a genius complicated test so it is just a regression
+# test that makes sure it's still outputting the same stuff it used to output,
+# and that it can read it's own output accurately.
 
-(def atlas (kowari/make-atlas 256
-                              256
-                              true
-                              "test/a.png"
-                              "test/b.png"
-                              "test/c.png"))
-
+(def pngs (mapcat (fn [item] (if (string/has-suffix? ".png" item)
+                               (string "test-images/" item)
+                               []))
+                  (os/dir "test-images")))
+(def atlas (kowari/make-atlas 270 256 true ;pngs))
+(kowari/draw-atlas atlas "out.png")
+(kowari/write-atlas atlas (kowari/make-json-writer "test.json"))
