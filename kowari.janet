@@ -123,25 +123,3 @@
   (def pic (pingo/make-blank-image width height))
   (draw-node pic tree 0 0)
   (pingo/write-file pic file))
-
-(defn write-atlas-json
-  "Writes an atlas to a file in json format"
-  [tree filename]
-  (def file (file/open filename :w))
-  (if (nil? file) (errorf "Could not open %s for writing" filename))
-  (var first-line true)
-  (file/write file "[")
-  (def line-format "%s{\"name\":\"%s\",\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}")
-  (each-atlas tree
-              (fn [x y pic]
-                (file/write file
-                            (string/format line-format
-                                           (if first-line "" ",")
-                                           (pic :name)
-                                           x
-                                           y
-                                           (pic :width)
-                                           (pic :height)))
-                (set first-line false)))
-  (file/write file "]")
-  (file/close file))

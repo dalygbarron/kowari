@@ -4,10 +4,24 @@
 # test that makes sure it's still outputting the same stuff it used to output,
 # and that it can read it's own output accurately.
 
+(defn fwritef
+  "write to file with format string"
+  [file format & bits]
+  (file/write file (string/format format bits)))
+
 (def pngs (mapcat (fn [item] (if (string/has-suffix? ".png" item)
                                (string "test-images/" item)
                                []))
                   (os/dir "test-images")))
 (def atlas (kowari/make-atlas 321 295 ;pngs))
 (kowari/draw-atlas atlas "out.png")
-(kowari/write-atlas-json atlas "test.json")
+(with [file (file/open "test.json" :w)]
+  (kowari/each-atlas atlas
+                     (fn [x y pic]
+                       (fwritef file
+                                "%s,%d,%d,%d,%d"
+                                (pic :name)
+                                x
+                                y
+                                (pic :width)
+                                (pic :height)))))
