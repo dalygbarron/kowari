@@ -117,6 +117,10 @@
   (for i 1 (length sorted-files) (add-to-bin bin-tree (sorted-files i)))
   bin-tree)
 
+(defn map-atlas
+  "Iterates over atlas nodes recursively, calling a function with intended
+  arguments of [x y pic]. Whatever this function evaluates to is added to a
+
 (defn draw-atlas
   "Takes an atlas and draws it plainly to a png file of your choosing"
   [tree file]
@@ -125,9 +129,3 @@
   (def pic (pingo/make-blank-image width height))
   (draw-node pic tree 0 0)
   (pingo/write-file pic file))
-
-(defn write-atlas
-  "Takes an atlas tree and writes it's data out in the way you desire. A writer
-  is a function that receives nodes with positions. When it finally receives a
-  node which is nil it means it's time to perform cleaning up and closing"
-  [tree )
