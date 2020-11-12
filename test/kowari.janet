@@ -8,6 +8,6 @@
                                (string "test-images/" item)
                                []))
                   (os/dir "test-images")))
-(def atlas (kowari/make-atlas 270 256 true ;pngs))
+(def atlas (kowari/make-atlas 321 295 ;pngs))
 (kowari/draw-atlas atlas "out.png")
-(kowari/write-atlas atlas (kowari/make-json-writer "test.json"))
+(kowari/write-atlas-json atlas "test.json")

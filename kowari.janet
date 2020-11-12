@@ -8,7 +8,7 @@
   {:name path
    :data (pic :data)
    :width (pic :width)
-   :heigh (pic :height)})
+   :height (pic :height)})
 
 (defn- make-bin-node
   "Makes a node in the bin packing tree"
@@ -51,7 +51,7 @@
     (if (nil? (tree :right))
       (do
         (set (tree :right) (make-bin-node pic
-                                          (tree :lower-bound)
+                                          (- ((tree :pic) :height) (pic :height))
                                           (- (tree :right-bound) (pic :width))))
         true)
       (if (add-to-bin (tree :right) pic)
@@ -83,43 +83,37 @@
                                             x
                                             (+ ((tree :pic) :height) y))))
 
-(defn make-json-writer
-  "Returns a closure for writing an atlas to a file in json format"
-  [filename]
-  (def file (file/open filename :w))
-  (if (nil? file) (errorf "Could not open %s for writing" filename))
-  (file/write file "[")
-  (fn [node x y]
-    (if (nil? node)
-      (do 
-        (file/write file "]")
-        (file/close file))
-      (file/write (string/format "{\"name\":\"%s\",\"x\":%d\"y\":%d,\"w\":%d,\"h\":%d},"
-                                 ((node :pic) :name)
-                                 x
-                                 y
-                                 ((node :pic) :width)
-                                 ((node :pic) :height))))))
-
 (defn make-atlas
   "Creates a texture atlas representation which contains tree of placements,
   but it lets you choose what to do with it all. width and height are the
   bounds of the atlas, passive is whether to crash on errors, and files are the
   string names of png files to get images from"
-  [width height passive & files]
-  (def sorted-files
-    (sort-by (fn [pic] (- 0 (max (pic :width) (pic :height))))
-             (map (fn [file] (pingo/read-file file)) files)))
-  (def atlas-pic (pingo/make-blank-image width height))
-  (def bin-tree (make-bin-node (sorted-files 0)
-                               (- width ((sorted-files 0) :width))
-                               (- height ((sorted-files 0) :height))))
-  (for i 1 (length sorted-files) (add-to-bin bin-tree (sorted-files i)))
+  [width height & files]
+  (def sorted-files (sort-by (fn [pic] (- 0 (max (pic :width) (pic :height))))
+                             (map load-named-pic files)))
+  (def top (sorted-files 0))
+  (if (or (> (top :width) width) (> (top :height) height))
+    (errorf "Could not fit %s" (top :name)))
+  (def bin-tree (make-bin-node top
+                               (- height (top :height))
+                               (- width (top :width))))
+  (for i 1 (length sorted-files)
+    (if (not (add-to-bin bin-tree (sorted-files i)))
+      (errorf "could not fit %s" ((sorted-files i) :name))))
   bin-tree)
 
-(defn map-atlas
+(defn each-atlas
   "Iterates over atlas nodes recursively, calling a function with intended
-  arguments of [x y pic]. Whatever this function evaluates to is added to a
+  arguments of [x y pic]. It doesn't do anything else. Also note that pic has
+  a name field as well as the usual"
+  [tree func &opt x y]
+  (default x 0)
+  (default y 0)
+  (func x y (tree :pic))
+  (if (not (nil? (tree :right)))
+    (each-atlas (tree :right) func (+ x ((tree :pic) :width)) y))
+  (if (not (nil? (tree :lower)))
+    (each-atlas (tree :lower) func x (+ ((tree :pic) :height) y))))
 
 (defn draw-atlas
   "Takes an atlas and draws it plainly to a png file of your choosing"
@@ -129,3 +123,25 @@
   (def pic (pingo/make-blank-image width height))
   (draw-node pic tree 0 0)
   (pingo/write-file pic file))
+
+(defn write-atlas-json
+  "Writes an atlas to a file in json format"
+  [tree filename]
+  (def file (file/open filename :w))
+  (if (nil? file) (errorf "Could not open %s for writing" filename))
+  (var first-line true)
+  (file/write file "[")
+  (def line-format "%s{\"name\":\"%s\",\"x\":%d,\"y\":%d,\"w\":%d,\"h\":%d}")
+  (each-atlas tree
+              (fn [x y pic]
+                (file/write file
+                            (string/format line-format
+                                           (if first-line "" ",")
+                                           (pic :name)
+                                           x
+                                           y
+                                           (pic :width)
+                                           (pic :height)))
+                (set first-line false)))
+  (file/write file "]")
+  (file/close file))
