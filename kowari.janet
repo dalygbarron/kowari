@@ -70,19 +70,6 @@
           false)))
     false))
 
-(defn- draw-node
-  "Draws a bin tree recursively"
-  [pic tree x y]
-  (pingo/superimpose pic (tree :pic) x y)
-  (if (not (nil? (tree :right))) (draw-node pic
-                                            (tree :right)
-                                            (+ ((tree :pic) :width) x)
-                                            y))
-  (if (not (nil? (tree :lower))) (draw-node pic
-                                            (tree :lower)
-                                            x
-                                            (+ ((tree :pic) :height) y))))
-
 (defn make-atlas
   "Creates a texture atlas representation which contains tree of placements,
   but it lets you choose what to do with it all. width and height are the
@@ -115,11 +102,21 @@
   (if (not (nil? (tree :lower)))
     (each-atlas (tree :lower) func x (+ ((tree :pic) :height) y))))
 
-(defn draw-atlas
-  "Takes an atlas and draws it plainly to a png file of your choosing"
-  [tree file]
+(defn render-atlas
+  "Takes an atlas and renders it to a single picture"
+  [tree]
   (def width (+ (tree :right-bound) ((tree :pic) :width)))
   (def height (+ (tree :lower-bound) ((tree :pic) :height)))
-  (def pic (pingo/make-blank-image width height))
-  (draw-node pic tree 0 0)
-  (pingo/write-file pic file))
+  (def canvas (pingo/make-blank-image width height))
+  (each-atlas tree
+              (fn [x y pic]
+                (pingo/superimpose canvas pic x y)))
+  canvas)
+
+(defn render-atlas-to-file
+  "Renders an atlas to a file and evaluates to the overall picture as a
+  souvenir"
+  [tree filename]
+  (def pic (render-atlas tree))
+  (pingo/write-file pic filename)
+  pic)
