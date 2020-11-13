@@ -8,6 +8,8 @@ since it is only really meant to perform a task when required. The reason it is
 not a standalone program is that this way you can define your output format
 yourself with ease, and call it from a build script or something.
 
+![Kowari](https://github.com/dalygbarron/kowari/raw/master/cute.jpg "A Kowari")
+
 ## How to use
 A texture atlas generally consists of two parts when output; an image file
 which is the actual texture to use, and some kind of file that describes where
