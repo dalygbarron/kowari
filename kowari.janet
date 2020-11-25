@@ -47,28 +47,27 @@
   false on failure"
   [tree pic]
   (def size (pic-size pic))
+  (var success false)
   (if (fit size (right-size tree))
     (if (nil? (tree :right))
       (do
         (set (tree :right) (make-bin-node pic
                                           (- ((tree :pic) :height) (pic :height))
                                           (- (tree :right-bound) (pic :width))))
-        true)
-      (if (add-to-bin (tree :right) pic)
-        true
-        (if (fit size (lower-size tree))
-          (if (nil? (tree :lower))
-            (do
-              (set (tree :lower) (make-bin-node pic
-                                                (- (tree :lower-bound)
-                                                   (pic :height))
-                                                (- (+ (tree :right-bound)
-                                                      ((tree :pic) :width))
-                                                   (pic :width))))
-              true)
-            (add-to-bin (tree :lower) pic))
-          false)))
-    false))
+        (set success true))
+      (set success (add-to-bin (tree :right) pic))))
+  (if (and (fit size (lower-size tree)) (not success))
+      (if (nil? (tree :lower))
+        (do
+          (set (tree :lower) (make-bin-node pic
+                                            (- (tree :lower-bound)
+                                               (pic :height))
+                                            (- (+ (tree :right-bound)
+                                                  ((tree :pic) :width))
+                                               (pic :width))))
+          (set success true))
+        (set success (add-to-bin (tree :lower) pic))))
+  success)
 
 (defn make-atlas
   "Creates a texture atlas representation which contains tree of placements,
@@ -80,7 +79,7 @@
                              (map load-named-pic files)))
   (def top (sorted-files 0))
   (if (or (> (top :width) width) (> (top :height) height))
-    (errorf "Could not fit %s" (top :name)))
+    (errorf "Absolutely could not fit %s" (top :name)))
   (def bin-tree (make-bin-node top
                                (- height (top :height))
                                (- width (top :width))))
